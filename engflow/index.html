@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build Time ROI Calculator</title>
+<style>
+  :root {
+    --bg: #f7f8fa; --card: #ffffff; --text: #1a1f2b; --muted: #5d6677; --line: #dfe3ea;
+    --accent: #2b59d9; --tag-bg: #fff3d6; --tag-text: #7a5300;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #12151c; --card: #1b2029; --text: #eef1f6; --muted: #98a2b3; --line: #2c3341;
+            --accent: #7aa2ff; --tag-bg: #3a2f10; --tag-text: #f2c96b; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+  label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: 4px; }
+  input, select { width: 100%; padding: 10px; font: inherit; color: var(--text); background: var(--bg);
+                  border: 1px solid var(--line); border-radius: 8px; }
+  .feature { text-align: center; }
+  .feature .label { color: var(--muted); font-size: .9rem; }
+  .feature .big { font-size: 2.6rem; font-weight: 700; color: var(--accent); line-height: 1.2; }
+  .range { color: var(--muted); margin-top: 4px; }
+  .range b { color: var(--text); }
+  .loss { text-align: center; color: var(--muted); font-size: .9rem; margin-top: 12px; }
+  .chart-wrap { position: relative; height: 280px; }
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  th:first-child, td:first-child { text-align: left; }
+  details summary { cursor: pointer; font-weight: 600; }
+  .adv { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 16px; }
+  .tag { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; font-size: .7rem;
+         background: var(--tag-bg); color: var(--tag-text); font-weight: 600; vertical-align: middle; }
+  .hint { font-size: .75rem; color: var(--muted); margin-top: 3px; }
+  button { padding: 8px 14px; font: inherit; border-radius: 8px; border: 1px solid var(--line);
+           background: var(--bg); color: var(--text); cursor: pointer; margin-top: 14px; }
+  footer { color: var(--muted); font-size: .8rem; margin-top: 24px; }
+  .headline { text-align: center; }
+  .headline .label { color: var(--muted); font-size: .9rem; }
+  .headline .big { font-size: 2.6rem; font-weight: 700; line-height: 1.2; }
+  .cta { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 14px; }
+  .cta button { margin: 0; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px; }
+  .kpis .card { margin: 0; text-align: center; }
+  .kpis .kpi-value { font-size: 1.7rem; font-weight: 700; }
+  .kpis .kpi-first .kpi-value { color: var(--accent); font-size: 2rem; }
+  .kpis .kpi-label { color: var(--muted); font-size: .85rem; }
+  .kpis .range { font-size: .85rem; }
+  .row { display: flex; gap: 10px; align-items: center; }
+  .row input[type=number] { width: 110px; flex: none; }
+  input[type=range] { padding: 0; accent-color: var(--accent); }
+  dialog { border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--text);
+           padding: 24px; width: min(420px, calc(100vw - 32px)); }
+  dialog::backdrop { background: rgba(0,0,0,.5); }
+  dialog form > div { margin-bottom: 12px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .modal-actions button { margin: 0; }
+  #modalMsg { font-size: .85rem; color: var(--muted); margin-top: 10px; }
+  .err { color: #c0392b; }
+</style>
+</head>
+<body>
+<main>
+  <h1>What are slow builds costing you?</h1>
+  <p class="sub">Estimate the engineering time and CI compute you could recover over four years.</p>
+
+  <section class="card">
+    <div class="inputs">
+      <div><label for="stage">Funding stage</label><select id="stage"></select></div>
+      <div><label for="engineers">Engineers</label>
+        <div class="row"><input id="engineersRange" type="range" min="5" max="2000" step="5" value="100" aria-label="Engineers slider">
+        <input id="engineers" type="number" min="1" step="1" value="100"></div></div>
+      <div><label for="salary">Average salary (USD)</label><input id="salary" type="number" min="0" step="1000" value="150000"></div>
+    </div>
+  </section>
+
+  <section class="card headline" aria-live="polite">
+    <div class="label">Projected 4-year loss from slow builds</div>
+    <div class="big" id="headValue"></div>
+    <div class="loss">Gross cost of engineer waiting time plus CI compute, before any savings</div>
+    <div class="cta">
+      <button type="button" class="primary" id="btnPdf">Download Full Executive Report (PDF)</button>
+      <button type="button" id="btnDemo">Schedule Technical Demo</button>
+    </div>
+  </section>
+
+  <section class="kpis" aria-live="polite">
+    <div class="card kpi-first">
+      <div class="kpi-label" id="kpi1Label"></div>
+      <div class="kpi-value" id="kpi1Value"></div>
+      <div class="range" id="range"></div>
+    </div>
+    <div class="card">
+      <div class="kpi-label">Annual lost hours (year 1)</div>
+      <div class="kpi-value" id="kpi2Value"></div>
+      <div class="range">engineer hours spent waiting on builds</div>
+    </div>
+    <div class="card">
+      <div class="kpi-label">Total financial waste (year 1)</div>
+      <div class="kpi-value" id="kpi3Value"></div>
+      <div class="range">waiting cost plus CI compute</div>
+    </div>
+  </section>
+
+  <dialog id="modal">
+    <form method="dialog" id="leadForm" novalidate>
+      <h2 id="modalTitle" style="margin-top:0"></h2>
+      <div><label for="leadName">Name</label><input id="leadName" autocomplete="name" required></div>
+      <div><label for="leadEmail">Work email</label><input id="leadEmail" type="email" autocomplete="email" required></div>
+      <div><label for="leadCompany">Company</label><input id="leadCompany" autocomplete="organization" required></div>
+      <div class="modal-actions">
+        <button type="button" id="modalCancel">Cancel</button>
+        <button type="submit" class="primary" id="modalSubmit">Submit</button>
+      </div>
+      <div id="modalMsg"></div>
+    </form>
+  </dialog>
+
+  <section class="card">
+    <div class="chart-wrap"><canvas id="chart" aria-label="Projected recoverable savings by year"></canvas></div>
+    <table id="table" style="margin-top:16px"></table>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>Advanced</summary>
+      <p class="hint">Defaults come from defaults.json. Fields tagged <span class="tag">illustrative</span> are placeholders or low-confidence estimates; replace them with your own numbers.</p>
+      <div class="adv" id="adv"></div>
+      <button type="button" id="reset">Reset to defaults</button>
+    </details>
+  </section>
+
+  <footer>
+    Savings rates and defaults are industry benchmarks and illustrative estimates, not EngFlow customer results.
+    Four-year totals add each year's estimate with no discounting and assume salary, build time and run counts stay flat while headcount grows at the stage's median rate.
+  </footer>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="config.js"></script>
+<script src="calc.js"></script>
+<script>
+(function () {
+  const i = CONFIG.inputs;
+  const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+  const $ = (id) => document.getElementById(id);
+  const LOW = ['none', 'none-low', 'low'];
+  const isIllustrative = (meta, stage) => {
+    let c = meta.confidence;
+    if (c && typeof c === 'object') c = c[stage] || '';
+    return meta.placeholder === true || meta.source === 'judgment constant' || LOW.includes(c) || /^low/.test(c || '');
+  };
+
+  // Advanced fields: key (override name), label, default getter, tag source, step
+  const FIELDS = [
+    { key: 'buildMinutes', label: 'Build minutes', def: () => i.build_minutes.value, meta: i.build_minutes, step: 0.5 },
+    { key: 'runsPerEngineerPerDay', label: 'Runs per engineer per day', def: () => i.runs_per_engineer_per_day.value, meta: i.runs_per_engineer_per_day, step: 0.5 },
+    { key: 'ciSpendPerEngineerMonth', label: 'CI compute spend ($/engineer/month)', def: () => i.ci_compute_spend.value, meta: i.ci_compute_spend, step: 5 },
+    { key: 'growthPct', label: 'Headcount growth (%/yr)', def: () => i.headcount_growth_pct.values[$('stage').value], meta: i.headcount_growth_pct, step: 0.5, stageDependent: true },
+    { key: 'waitingFactor', label: 'Waiting factor', def: () => i.waiting_factor.value, meta: i.waiting_factor, step: 0.05 },
+    { key: 'workingDays', label: 'Working days per year', def: () => i.working_days_per_year.value, meta: i.working_days_per_year, step: 1 },
+    { key: 'hoursPerYear', label: 'Hours per year', def: () => i.hours_per_year.value, meta: i.hours_per_year, step: 10 },
+    { key: 'loadingFactor', label: 'Loading factor (salary to cost)', def: () => i.loading_factor.value, meta: i.loading_factor, step: 0.05 },
+    { key: 'roomToImprove', label: 'Room-to-improve factor', def: () => i.room_to_improve.value, meta: i.room_to_improve, step: 0.05 },
+  ];
+  const RATE_FIELDS = ['conservative', 'expected', 'optimistic'];
+
+  // Stage list and tag helpers
+  CONFIG.stages.forEach((s) => $('stage').add(new Option(s, s)));
+  $('stage').value = 'Series B';
+
+  const tagHTML = '<span class="tag">illustrative</span>';
+  const adv = $('adv');
+  const inputs = {};
+  const addField = (id, label, html, tagged, hint) => {
+    const d = document.createElement('div');
+    d.innerHTML = `<label for="${id}">${label}${tagged ? tagHTML : ''}</label>${html}${hint ? `<div class="hint">${hint}</div>` : ''}`;
+    adv.appendChild(d);
+  };
+  const stage = () => $('stage').value;
+
+  addField('aiUse', 'AI use', `<select id="aiUse">${CONFIG.selections.ai_use.options.map((o) => `<option value="${o}">${o.replace('_', '-')} (x${i.ai_multiplier.values[o]})</option>`).join('')}</select>`,
+    true, 'Multiplies daily runs and compute waste. Assisted is a low-confidence proxy; heavy-agentic is a placeholder.');
+  addField('scenario', 'Featured scenario', `<select id="scenario">${CONFIG.selections.scenario.options.map((o) => `<option value="${o}">${o}</option>`).join('')}</select>`, false);
+  FIELDS.forEach((f) => addField('f_' + f.key, f.label, `<input id="f_${f.key}" type="number" step="${f.step}">`, isIllustrative(f.meta, stage())));
+  RATE_FIELDS.forEach((r) => addField('r_' + r, `Savings rate: ${r}`, `<input id="r_${r}" type="number" step="0.01" min="0" max="1">`, true,
+    r === 'conservative' ? 'Anchored to single vendor/anecdotal case studies, not a population benchmark.' : ''));
+
+  $('aiUse').value = CONFIG.selections.ai_use.default;
+  $('scenario').value = CONFIG.selections.scenario.default;
+
+  // Overrides: a field only overrides once the visitor edits it, so stage-dependent growth keeps following the stage.
+  const touched = new Set();
+  function fillDefaults() {
+    FIELDS.forEach((f) => { if (!touched.has(f.key)) $('f_' + f.key).value = f.def(); });
+    RATE_FIELDS.forEach((r) => { if (!touched.has('r_' + r)) $('r_' + r).value = i.scenario_savings_rate.values[r]; });
+  }
+  function refreshTags() {
+    const g = FIELDS.find((f) => f.key === 'growthPct');
+    const label = document.querySelector('label[for="f_growthPct"]');
+    label.innerHTML = g.label + (isIllustrative(g.meta, stage()) ? tagHTML : '');
+  }
+
+  function overrides() {
+    const o = { aiUse: $('aiUse').value, scenario: $('scenario').value, savingsRates: {} };
+    FIELDS.forEach((f) => { if (touched.has(f.key)) o[f.key] = parseFloat($('f_' + f.key).value); });
+    RATE_FIELDS.forEach((r) => { if (touched.has('r_' + r)) o.savingsRates[r] = parseFloat($('r_' + r).value); });
+    return o;
+  }
+
+  let chart;
+  function render() {
+    const user = { stage: stage(), engineers: Math.max(1, parseFloat($('engineers').value) || 0), salary: Math.max(0, parseFloat($('salary').value) || 0) };
+    const res = Calc.calculate(CONFIG, user, overrides());
+    const sc = res.params.scenario;
+    $('headValue').textContent = fmt.format(res.totals.gross);
+    $('kpi1Label').textContent = `Recoverable savings over 4 years (${sc})`;
+    $('kpi1Value').textContent = fmt.format(res.featured);
+    $('range').innerHTML = `Range: <b>${fmt.format(res.totals.conservative)}</b> (conservative) to <b>${fmt.format(res.totals.optimistic)}</b> (optimistic)` +
+      (sc !== 'expected' ? ` &middot; expected: <b>${fmt.format(res.totals.expected)}</b>` : '');
+    $('kpi2Value').textContent = Math.round(res.rows[0].waitingHours).toLocaleString('en-US') + ' hrs';
+    $('kpi3Value').textContent = fmt.format(res.rows[0].total);
+
+    $('table').innerHTML = '<tr><th>Year</th><th>Engineers</th><th>Waiting cost</th><th>CI compute</th><th>Recoverable</th></tr>' +
+      res.rows.map((r) => `<tr><td>${r.year}</td><td>${r.engineers.toFixed(0)}</td><td>${fmt.format(r.waitingCost)}</td><td>${fmt.format(r.computeWaste)}</td><td>${fmt.format(r[sc])}</td></tr>`).join('');
+
+    if (typeof Chart === 'undefined') return;
+    const labels = res.rows.map((r) => 'Year ' + r.year);
+    const data = {
+      labels,
+      datasets: [
+        { type: 'bar', label: sc + ' (featured)', data: res.rows.map((r) => r[sc]), backgroundColor: '#2b59d9' },
+        { type: 'line', label: 'conservative', data: res.rows.map((r) => r.conservative), borderColor: '#8b95a7', borderDash: [5, 4], pointRadius: 3 },
+        { type: 'line', label: 'optimistic', data: res.rows.map((r) => r.optimistic), borderColor: '#2f9e6f', borderDash: [5, 4], pointRadius: 3 },
+      ],
+    };
+    if (chart) { chart.data = data; chart.update(); return; }
+    chart = new Chart($('chart'), {
+      data, options: { responsive: true, maintainAspectRatio: false,
+        scales: { y: { ticks: { callback: (v) => '$' + (v / 1000).toLocaleString() + 'K' } } },
+        plugins: { tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${fmt.format(c.parsed.y)}` } } } },
+    });
+  }
+
+  FIELDS.forEach((f) => $('f_' + f.key).addEventListener('input', () => { touched.add(f.key); render(); }));
+  RATE_FIELDS.forEach((r) => $('r_' + r).addEventListener('input', () => { touched.add('r_' + r); render(); }));
+  // 150ms debounce on the slider, number inputs and salary so dragging doesn't re-render on every event.
+  const DEBOUNCE_MS = 150;
+  let timer;
+  const debouncedRender = () => { clearTimeout(timer); timer = setTimeout(render, DEBOUNCE_MS); };
+  $('engineersRange').addEventListener('input', () => { $('engineers').value = $('engineersRange').value; debouncedRender(); });
+  $('engineers').addEventListener('input', () => { $('engineersRange').value = $('engineers').value; debouncedRender(); });
+  $('salary').addEventListener('input', debouncedRender);
+  ['aiUse', 'scenario'].forEach((id) => $(id).addEventListener('input', render));
+
+  // Lead capture modal. PDF generation is a PLACEHOLDER: nothing is generated or sent anywhere yet.
+  const modal = $('modal');
+  const openModal = (title) => { $('modalTitle').textContent = title; $('modalMsg').textContent = ''; $('modalMsg').className = ''; modal.showModal(); };
+  $('btnPdf').addEventListener('click', () => openModal('Get your executive report'));
+  $('btnDemo').addEventListener('click', () => openModal('Schedule a technical demo'));
+  $('modalCancel').addEventListener('click', () => modal.close());
+  $('leadForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const msg = $('modalMsg');
+    const ok = $('leadName').value.trim() && $('leadCompany').value.trim() && /^\S+@\S+\.\S+$/.test($('leadEmail').value.trim());
+    if (!ok) { msg.className = 'err'; msg.textContent = 'Please enter your name, a valid work email and your company.'; return; }
+    msg.className = '';
+    msg.textContent = 'Thanks. Placeholder: PDF generation and lead submission are not connected yet, so nothing was generated or sent.';
+  });
+  $('stage').addEventListener('input', () => { fillDefaults(); refreshTags(); render(); });
+  $('reset').addEventListener('click', () => {
+    touched.clear(); $('aiUse').value = CONFIG.selections.ai_use.default; $('scenario').value = CONFIG.selections.scenario.default;
+    fillDefaults(); render();
+  });
+
+  fillDefaults(); refreshTags(); render();
+})();
+</script>
+</body>
+</html>

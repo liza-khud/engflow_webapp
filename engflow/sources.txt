@@ -1,0 +1,52 @@
+Sources behind the calculator defaults
+
+Everything here is an industry benchmark or an illustrative estimate, not EngFlow customer results.
+
+Headcount growth
+Company database CSV (local file). Median YoY employee growth by funding stage, 99 rows with EngFlow left out. D+ combines Series D, Series F and Late Stage. Seed has no rows, so it uses Series A.
+
+Build minutes (2.7, range 0.63 to 8.1)
+- CircleCI 2025 State of Software Delivery: https://circleci.com/landing-pages/assets/2025-state-of-software-delivery-report.pdf
+  Median workflow duration of 2m43s. I couldn't read the PDF text, so I confirmed the median through the next two links instead.
+- CircleCI press release: https://circleci.com/newsroom/circleci-publishes-2025-state-of-software-delivery-report
+  Seen in search results only.
+- The New Stack: https://thenewstack.io/?p=22780982 (also https://thenewstack.io/the-roi-of-speed-how-fast-code-delivery-saves-millions/)
+  Gives the quartiles: 25% of teams finish in under 38 seconds, 75% in 8 minutes or less (the report table says 8m7s). Seen in a search extraction only, because the page itself wouldn't load properly.
+The median is the number used. The mean looks higher (about 11 minutes, but I couldn't confirm which column that was), and large monorepos are often longer.
+
+CI compute spend ($30 per engineer per month, range $15 to $75)
+- cicdcalculator: https://cicdcalculator.com/
+  For a 20-developer team it estimates $300 to $1,500 a month. That gives $15 and $75 per developer.
+- Semaphore: https://semaphore.io/blog/enterprise-ci-cd-free
+  Says a 50-person team with complex pipelines pays about $1,500 a month on GitHub Actions or GitLab and about $2,500 on CircleCI. $1,500 / 50 gives the $30. It's a CI vendor writing "based on our experience", so treat it as an estimate.
+- Infratally: https://infratally.com/articles/github-actions-vs-circleci-vs-codepipeline-cost-2026/
+  Cross-check only. Working from its assumptions I get about $900 a month for 50 developers, or $18 each.
+I dropped the LeanOps article. It claimed $3,000 to $8,000 a month for 50 people without a source, and its own table didn't match.
+
+Savings rates (placeholders; each one is a single company's result)
+- Mozilla blog, Firefox/Bazel part 2: https://blog.mozilla.org/nfroyd/2019/11/01/evaluating-bazel-for-building-firefox-part-2/
+  Conservative 0.27: Pinterest says "time to land code" fell 27% after its iOS move to Bazel.
+  Optimistic 0.83: Dataform's average CI build went from 30 minutes to 5 with Bazel and remote caching.
+- Plaid case study, published by EngFlow: https://www.engflow.com/caseStudies/plaid
+  Expected 0.50: Plaid cut CI build times by 50% after moving 150+ Go services to Bazel and adding an EngFlow remote cache. The page doesn't say how much came from each change.
+
+AI multipliers (1.0 / 1.24 / 2.0)
+These all measure pull request volume, not CI runs. I found nothing that measures CI builds per developer, so the link to runs is an assumption.
+- TechRepublic on a Microsoft study: https://www.techrepublic.com/article/news-ai-coding-agents-microsoft-pull-requests/
+  Assisted 1.24, from about +24% merged PRs per engineer per day (range +14.5% to +33.7%). The site blocks automated fetching, so I only saw this in search results, and I didn't check the Microsoft study itself.
+- Jellyfish: https://jellyfish.co/blog/2025-ai-metrics-in-review/
+  PRs per engineer rose 113% (1.36 to 2.9) going from 0% to 100% adoption. They don't define adoption.
+- Faros AI: https://www.faros.ai/blog/ai-software-engineering
+  High-adoption teams merge 98% more pull requests.
+Jellyfish and Faros together are the basis for the heavy-agentic 2.0, which is a placeholder.
+
+No outside source
+- Runs per engineer per day (4): placeholder. Replace with EngFlow telemetry. CircleCI reports 1.64 runs per project per day, which can't be converted to per engineer.
+- Room-to-improve (1.0) and loading factor (1.0): judgment values.
+- Waiting factor (0.30), working days (230), hours per year (1,840): from the EngFlow model spec in context.md.
+
+Looked at but not used
+- Bitrise build cache post (83% on a Bazel app): https://bitrise.io/blog/post/bitrise-build-cache-reduces-circleci-build-times. Only seen as a search snippet, and Dataform already covers the 83%.
+- devops.com on the 2022 CircleCI report (median about 4 minutes): https://devops.com/?p=139982. This was where the old 4-minute default came from. Replaced by 2.7.
+- Salary-by-stage pages (Levels.fyi and similar). Nothing gave a fully loaded cost by stage, and salary is a visitor input anyway.
+- A 2026 arXiv study of industrial code repositories: https://arxiv.org/pdf/2605.12153. Codebase size was dropped from the model.

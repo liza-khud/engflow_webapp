@@ -1,0 +1,240 @@
+{
+  "version": "0.3-approved",
+  "notes": [
+    "Visitor inputs: funding stage, engineers (headcount), cost per engineer. Everything below is a hidden default, editable in the Advanced panel where marked.",
+    "Headcount growth is from the company database (99 rows, EngFlow excluded). D+ = Series D + Series F + Late Stage. Seed borrows Series A.",
+    "All non-growth inputs are identical across stages by decision, because the data gives no basis for varying them.",
+    "Savings rates are industry benchmarks / vendor case studies, not EngFlow customer results (per context.md)."
+  ],
+  "stages": [
+    "Seed",
+    "Series A",
+    "Series B",
+    "Series C",
+    "D+",
+    "Public"
+  ],
+  "inputs": {
+    "headcount_growth_pct": {
+      "unit": "percent per year",
+      "values": {
+        "Seed": 28,
+        "Series A": 28,
+        "Series B": 30,
+        "Series C": 14.5,
+        "D+": 16.5,
+        "Public": 11
+      },
+      "spread_p25_p75": {
+        "Seed": [
+          -6.5,
+          88.5
+        ],
+        "Series A": [
+          -6.5,
+          88.5
+        ],
+        "Series B": [
+          3,
+          73
+        ],
+        "Series C": [
+          -1.75,
+          30.5
+        ],
+        "D+": [
+          2.75,
+          30.25
+        ],
+        "Public": [
+          4,
+          16.5
+        ]
+      },
+      "n": {
+        "Seed": 0,
+        "Series A": 11,
+        "Series B": 13,
+        "Series C": 12,
+        "D+": 24,
+        "Public": 39
+      },
+      "source": "dataset",
+      "source_detail": "Company Database CSV, YoY Growth (%) = employee headcount growth. Median per bucket.",
+      "confidence": {
+        "Seed": "low (borrows Series A, no rows)",
+        "Series A": "low",
+        "Series B": "low-moderate",
+        "Series C": "low-moderate",
+        "D+": "moderate",
+        "Public": "good"
+      },
+      "advanced_override": false,
+      "source_urls": [
+        "Deliverable 1 Database Deliverable 1 - Company Database.csv (local file, no URL)"
+      ]
+    },
+    "build_minutes": {
+      "unit": "minutes per build",
+      "value": 2.7,
+      "range": {
+        "low": 0.63,
+        "typical": 2.7,
+        "high": 8.1
+      },
+      "source": "benchmark",
+      "source_detail": "CircleCI 2025 State of Software Delivery: median workflow duration 2m43s (2.72 min, rounded to 2.7). P25 and P75 corroborated by The New Stack's coverage of the report, as returned by a search extraction: 25% of teams complete workflows in under 38 seconds (0.63 min) and 75% in 8 minutes or less (the report table lists 8m7s, 8.1 min). The New Stack page body could not be fetched directly (only navigation text came back), so these quartiles are verified via search extraction only. Covers about 15 million workflows from 22,000+ organizations on CircleCI, collected in September 2024.",
+      "source_urls": [
+        "https://circleci.com/landing-pages/assets/2025-state-of-software-delivery-report.pdf",
+        "https://circleci.com/newsroom/circleci-publishes-2025-state-of-software-delivery-report",
+        "https://thenewstack.io/?p=22780982",
+        "https://thenewstack.io/the-roi-of-speed-how-fast-code-delivery-saves-millions/"
+      ],
+      "confidence": "moderate",
+      "same_for_all_stages": true,
+      "advanced_override": true,
+      "note": "median; mean appears higher (about 11 min, column label unconfirmed); large monorepos often longer."
+    },
+    "runs_per_engineer_per_day": {
+      "unit": "CI runs per engineer per day",
+      "value": 4,
+      "source": "PLACEHOLDER",
+      "source_detail": "Illustrative, not sourced. To be replaced with EngFlow telemetry. No published per-engineer benchmark found (CircleCI reports 1.64 runs per project per day, not per engineer).",
+      "confidence": "none",
+      "placeholder": true,
+      "flag_in_advanced_panel": true,
+      "config_constant": "RUNS_PER_ENGINEER_PER_DAY_PLACEHOLDER",
+      "same_for_all_stages": true,
+      "advanced_override": true
+    },
+    "ci_compute_spend": {
+      "ui_label": "CI compute spend",
+      "unit": "USD per engineer per month, multiplied by headcount",
+      "value": 30,
+      "range": {
+        "low": 15,
+        "typical": 30,
+        "high": 75
+      },
+      "source": "benchmark",
+      "source_detail": "Derived by dividing team-level monthly estimates by team size. low $15 = $300/month / 20 developers (cicdcalculator.com: 20 devs, 100-150 builds/day, 8 min, hosted CI $300-1,500/month). high $75 = $1,500/month / 20 developers (same page, top of its range). typical $30 = $1,500/month / 50 developers: Semaphore (a CI vendor, 'based on our experience') estimates a high-performance 50-person team with complex pipelines pays about $1,500/month on GitHub Actions or GitLab Premium and about $2,500/month on CircleCI ($30 to $50 per engineer). Cross-check: Infratally's model gives about $900/month for 50 developers ($18 per engineer). Hosted CI only. Vendor and blog estimates, not a survey.",
+      "source_urls": [
+        "https://cicdcalculator.com/",
+        "https://semaphore.io/blog/enterprise-ci-cd-free",
+        "https://infratally.com/articles/github-actions-vs-circleci-vs-codepipeline-cost-2026/"
+      ],
+      "confidence": "low",
+      "same_for_all_stages": true,
+      "advanced_override": true
+    },
+    "room_to_improve": {
+      "value": 1.0,
+      "source": "judgment constant",
+      "note": "Neutral; full model adjusts by build system age and codebase size, dropped for the website.",
+      "confidence": "none"
+    },
+    "waiting_factor": {
+      "value": 0.3,
+      "source": "EngFlow model spec",
+      "source_detail": "Fraction of build time engineers are blocked. From the model spec in context.md.",
+      "confidence": "spec",
+      "advanced_override": true
+    },
+    "working_days_per_year": {
+      "value": 230,
+      "source": "EngFlow model spec",
+      "source_detail": "From the model spec in context.md.",
+      "confidence": "spec",
+      "advanced_override": true
+    },
+    "scenario_savings_rate": {
+      "unit": "fraction of (waiting cost + compute waste) recoverable",
+      "values": {
+        "conservative": 0.27,
+        "expected": 0.5,
+        "optimistic": 0.83
+      },
+      "source": "PLACEHOLDER",
+      "source_detail": "No credible population benchmark found. Each rate is a single company data point: conservative 27% = Pinterest, 'time to land code' decreased by 27% after its iOS switch to Bazel (via Mozilla's blog, 2019); expected 50% = Plaid, 'cut CI build times by 50%' after moving 150+ Go services to Bazel and adding an EngFlow remote cache (EngFlow-published case study); optimistic 83% = Dataform, average CI build time 30 min to 5 min after switching to Bazel with remote caching (via Mozilla's blog, 2019; 30 to 5 is 83%). All vendor-published or anecdotal. Not EngFlow customer results.",
+      "confidence": "none-low",
+      "placeholder": true,
+      "same_for_all_stages": true,
+      "source_urls": {
+        "conservative": "https://blog.mozilla.org/nfroyd/2019/11/01/evaluating-bazel-for-building-firefox-part-2/",
+        "expected": "https://www.engflow.com/caseStudies/plaid",
+        "optimistic": "https://blog.mozilla.org/nfroyd/2019/11/01/evaluating-bazel-for-building-firefox-part-2/"
+      }
+    },
+    "ai_multiplier": {
+      "unit": "multiplier on daily runs and on compute waste",
+      "values": {
+        "none": 1.0,
+        "assisted": 1.24,
+        "heavy_agentic": 2.0
+      },
+      "sources": {
+        "none": "definition (baseline)",
+        "assisted": "benchmark proxy: Microsoft study, AI coding agents linked to about +24% merged PRs per engineer per day (range +14.5% to +33.7%), as reported by TechRepublic, 2025. Verified via search extraction; site blocks automated fetch.",
+        "heavy_agentic": "PLACEHOLDER: anchored to Jellyfish (average PRs per engineer +113%, 1.36 to 2.9, when adoption went from 0% to 100%; 'adoption' not defined) and Faros AI (high-adoption teams 'merge 98% more pull requests'; 47% more PRs touched per day). Vendor data."
+      },
+      "source_detail": "All figures measure pull request volume, not CI runs. No study found measuring CI build volume per developer, so the link to runs is inferred.",
+      "placeholder_entries": [
+        "heavy_agentic"
+      ],
+      "confidence": {
+        "none": "n/a",
+        "assisted": "low",
+        "heavy_agentic": "none-low"
+      },
+      "same_for_all_stages": true,
+      "source_urls": {
+        "assisted": "https://www.techrepublic.com/article/news-ai-coding-agents-microsoft-pull-requests/",
+        "heavy_agentic": [
+          "https://jellyfish.co/blog/2025-ai-metrics-in-review/",
+          "https://www.faros.ai/blog/ai-software-engineering"
+        ]
+      }
+    },
+    "hours_per_year": {
+      "value": 1840,
+      "source": "EngFlow model spec",
+      "source_detail": "230 working days x 8 hours.",
+      "confidence": "spec",
+      "advanced_override": true
+    },
+    "loading_factor": {
+      "value": 1.0,
+      "source": "judgment constant",
+      "source_detail": "Multiplier from salary to fully loaded cost. 1.0 = salary only (neutral, understates true cost). Illustrative.",
+      "confidence": "none",
+      "advanced_override": true
+    }
+  },
+  "dropped": {
+    "build_system_age": "Confirmed dropped. Dataset only has company age, a poor proxy. In the full model it feeds room-to-improve; on the website room_to_improve is the fixed constant 1.0.",
+    "codebase_size": "Confirmed dropped. No credible benchmark. Same treatment as build_system_age."
+  },
+  "formulas": {
+    "hourly_cost": "salary x loading_factor / hours_per_year"
+  },
+  "selections": {
+    "ai_use": {
+      "default": "none",
+      "options": [
+        "none",
+        "assisted",
+        "heavy_agentic"
+      ],
+      "advanced_override": true
+    },
+    "scenario": {
+      "default": "expected",
+      "options": [
+        "conservative",
+        "expected",
+        "optimistic"
+      ],
+      "advanced_override": true
+    }
+  }
+}
